@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 SELECT * FROM MYBOOK;
 -> 테이블 전체를 불러올 때 NULL은 결과에서 NULL로 명시된다.
 
@@ -247,3 +248,254 @@ CREATE INDEX cust_idx ON customer(name);
 
 
 
+=======
+SELECT * FROM MYBOOK;
+-> 테이블 전체를 불러올 때 NULL은 결과에서 NULL로 명시된다.
+
+SELECT bookid, NVL(price, 0)
+FROM mybook;
+-> NULL 값을 ISNULL() 함수를 통해 0이라는 값으로 대체했다.
+
+SELECT *
+FROM MYBOOK
+WHERE price IS NULL;
+-> NULL 값을 비교할 EO는 =기호 대신 IS NULL 명령어를 통해 NULL 값을 가지는 투플을 검색한다.
+
+SELECT *
+FROM MYBOOK
+WHERE price ='';
+-> NULL 값은 공백이 아니라 아직 입력하지 않은 값을 지칭하므로 ''로 검색했을 때 값이 나오지 않는다.
+
+SELECT bookid, price+100
+FROM mybook;
+-> NULL에 대한 연산의 결과는 NULL 로 나온다
+
+SELECT SUM(price), AVG(price), COUNT(*)
+FROM mybook
+WHERE bookid >= 4;
+-> SUM(), AVG()는 WHERE 절의 조건에 따라 값이 없으므로 연산 결과 NULL 값을 결과로 갖고, COUNT(*)는 NULL 값을 1로 계산한다.
+
+SELECT COUNT(*), COUNT(price)
+FROM mybook;
+-> COUNT(*)와 달리 COUNT(price)는 NULL을 인정하지 않으므로 NULL 투플을 제외한 개수를 셈한다.
+
+SELECT SUM(price), AVG(price)
+FROM mybook;
+-> SUM(), AVG()은 NULL 값을 빼고 연산한다.
+
+3.
+SELECT *
+FROM book;
+-> 투플 10개
+
+SELECT *
+FROM book
+WHERE ROWNUM <= 5;
+-> 투플 처음부터 5개
+
+SELECT *
+FROM book
+WHERE ROWNUM <= 5
+ORDER BY price;
+-> 투플 처음부터 5개를 선택한 후 정렬
+
+SELECT *
+FROM (SELECT * FROM book ORDER BY price) b
+WHERE ROWNUM <= 5;
+-> 정렬한 후 처음부터 5개를 선택
+
+SELECT *
+FROM (SELECT * FROM book WHERE ROWNUM <=5) b
+ORDER BY price;
+-> 투플 처음부터 5개를 선택한 후 정렬
+
+SELECT *
+FROM (SELECT * FROM book WHERE ROWNUM <= 5 ORDER BY price) b;
+-> 투플 처음부터 5개를 선택한 후 정렬
+
+4.
+1개 => "15 < ALL (SELECT 과일코드 FROM 과일)"은 참이다.
+
+5.
+SELECT custid, (SELECT address
+		FROM customer cs
+		WHERE cs.custid = od.custid) "address", SUM(saleprice) "total"
+FROM orders od
+GROUP BY od.custid;
+-> 상관중첩질의이므로 외부질의부터 실행된다. 따라서 외부의 FROM과 GROUP BY를 통해 custid 별 고객을 얻고 이 고객들에 대해 custid, 내부질의에서 cs에 주소가 있는 고객을 선별한다. -> 주문이 있는 고객에 대하여 고객별로 custid, address, 총주문액을 구한다.
+
+SELECT cs.name, s
+FROM (SELECT custid, avg(saleprice) s
+	FROM orders GROUP BY custid) od, customer cs
+WHERE cs.custid = od.custid;
+
+-> INLINE 질의를 통해 고객별 평균 구매가격을 구하였고, 외부질의에서 주문에 대해서 내부질의에서 구한 custid와 같은 custid를 갖는 고객을 찾아 둘을 조인하였다. -> 주문을 한 고객별 name, 평균 구매가격을 구한다.
+
+SELECT SUM(saleprice) "total"
+FROM orders od
+WHERE EXISTS (SELECT *
+		FROM customer cs
+		WHERE custid <= 3 AND cs.custid = od.custid);
+-> 상관중첩질의이므로 외부질의부터 시행된다. -> 고객번호가 3보다 작은 고객들의 총 판매금액을 구한다.
+
+6. 뷰의 장점과 단점을 설명하시오
+장점
+- 편리성 : 미리 정의된 뷰를 일반 테이블처럼 사용할 수 있기 때문에 편리하다. 또 사용자가 필요한 정보만 요구에 맞게 가공하여 뷰로 만들어 쓸 수 있다.
+- 재사용성 : 자주 사용되는 질의를 뷰로 미리 정의해 놓을 수 있다.
+- 보안성 : 각 사용자별로 필요한 데이터만 선별하여 보여줄 수 있다. 중요한 질의의 경우 질의 내용을 암호화할 수 있다.
+단점
+- 실행 시 릴레이션으로부터 계산을 해야 하는 시간이 필요하다.
+- 데이터 조작(INSERT, DELETE, UPDATE)에 제한이 있다.
+
+7.
+3개
+
+8.
+판매가격이 20,000원인 도서의 도서번호, 도서이름, 고객이름, 출판사, 판매가격을 보여주는 highorders 뷰를 생성하시오
+CREATE VIEW highorders
+AS SELECT b.bookid, b.bookname, c.name, b.publisher, o.saleprice
+FROM book b, orders o, customer c
+WHERE b.bookid=o.bookid AND o.custid=c.custid AND saleprice >= 20000;
+
+생성된 뷰를 이용하여 판매된 도서의 이름과 고객의 이름을 출력하는 SQL 문을 작성하시오
+SELECT bookname, name FROM highorders;
+
+highorders 뷰를 변경하고자 한다. 판매가격 속성을 삭제하는 명령을 수행하시오. 삭제 후 (2)번 SQL 문을 다시 수행하시오.
+CREATE OR REPLACE VIEW highorders
+AS SELECT b.bookid, b.bookname, c.name, b.publisher
+FROM book b, orders o, customer c
+WHERE b.bookid=o.bookid AND o.custid=c.custid AND salepirce >= 20000;
+
+9.
+팀장(MGR)이 없는 직원의 이름을 보이시오
+SELECT ename FROM emp WHERE MGR IS NULL;
+
+사원의 이름과 부서의 이름을 보이시오(조인/스칼라 부속질의 사용)
+조인
+SELECT ename, dname
+FROM emp, dept WHERE emp.deptno=dept.deptno;
+d2box
+스칼라 부속질의
+SELECT ename, (SELECT dname FROM dept WHERE deptno=e.deptno)
+FROM emp e;
+
+'CHICAGO'에 근무하는 사원의 이름을 보이시오(조인/인라인 뷰/중첩질의/EXISTS 사용)
+조인
+SELECT ename
+FROM emp, dept WHERE emp.deptno = dept.detpno AND loc LIKE 'CHICAGO';
+
+인라인 뷰
+SELECT ename
+FROM emp, (SELECT deptno FROM dept WHERE loc LIKE 'CHICAGO') d
+WHERE emp.deptno=d.deptno;
+
+중첩질의
+SELECT ename
+FROM emp
+WHERE deptno IN
+	(SELECT deptno FROM dept WHERE loc LIKE 'CHICAGO');
+
+EXISTS
+SELECT ename
+FROM emp e
+EXISTS
+	(SELECT deptno FROM e.deptno=deptno AND loc LIKE 'CHICAGO');
+
+평균보다 급여가 많은 직원의 이름을 보이시오
+SELECT name
+FROM emp
+WHERE sal > (SELECT AVG(sal) FROM emp);
+
+자기 부서의 평균보다 급여가 많은 직원의 이름을 보이시오(상관 부속질의 사용)
+SELECT name
+FROM emp e
+WHERE sal > (SELECT AVG(sal) FROM emp WHERE empno=e.empno);
+
+10.
+극장이름과 고객이름을 저장하는 극장-고객 뷰를 생성하시오
+CREATE VIEW 극장-고객
+AS	SELECT a.극장이름, c고객이름
+	FROM 극장 a, 예약 b, 고객 c
+	WHERE a.극장번호=b.예약번호 AND b.고객번호=c.고객번호;
+
+대한극장에 예약을 한 고객의 수를 날짜별로 저장하는 대한-고객수 뷰를 생성하시오
+CREATE VIEW 대한-고객수
+AS	SELECT 날짜, COUNT(*)
+	FROM 극장 a, 예약 b
+	WHERE a.극장번호=b.예약번호 AND 극장이름 LIKE '대한'
+	GROUP BY 날짜;
+
+11.
+SELECT * FROM 극장예약;
+-> 극장이름과 예약 수를 검색
+
+SELECT 극장이름 FROM 극장예약 WHERE 극장이름='강남';
+-> 극장이름이 강남인 극장이름 검색
+=> SELECT 예약수 FROM 극장예약 WHERE 극장이름='강남';)
+
+SELECT MIN(예약수) FROM 극장예약;
+-> 극장예약에서 가장 예약수가 적은 수를 검색
+
+SELECT COUNT(*) FROM 극장예약;
+-> 예약이 있는 극장 수를 검색
+
+SELECT 극장이름 FROM 극장예약 WHERE 예약수 > 100;
+-> 예약수가 100을 넘는 극장이름을 검색
+
+SELECT 극장이름 FROM 극장예약 ORDER BY 예약수
+-> 극장이름을 검색하되 예약수 순으로 오름차순 정렬하여 검색
+
+12.
+엑세스 시간 = 탐색시간(seek time, 액세스 헤드를 트랙에 이동시키는 시간)
+	+ 회전지연시간(rotational latency time, 섹터가 엑세스 헤드에 접근하는 시간)
+	+ 데이터 전송시간(data transfer time, 데이터를 주기억장치로 읽어오는 시간)
+
+13. 차수가 3인 비어있는 b-tree에 1부터 9까지 삽입해보고 균형을 어떻게 유지하는지 설명하시오
+
+14. 다음 데이터를 순서적으로 삽입하여 B-트리를 구성할 때 루트 노드에 존재하는 킷값은? (단, B-트리의 차수는 3이라고 가정한다)
+- 키 값들의 삽입 순서 : 8, 5, 1, 7, 3, 12, 9, 6
+-> 5
+
+15.
+CREATE VIEW salesmanView
+AS SELECT e.empno, e.ename, e.sal, d.dname
+FROM emp e, dept d
+WHERE e.deptno=d.deptno AND job = 'SALESMAN';
+
+SELECT empno, ename, sal
+FROM salesmanView
+WHERE ROWNUM <= 3;
+
+CREATE VIEW salesTop
+AS SELECT empno, ename, sal, dname
+FROM salesmanView
+WHERE sal >= 1500;
+
+SELECT *
+FROM salesTop;
+
+-> scott 계정에서 view를 생성하려면 view를 생성하는 권한이 필요하다.
+다음과 같이 권한을 부여한 후 실행해본다.
+/* create view 권한 부여하기 - 툴이 아닌 sql 창을 이용하여 권한 부여
+system 접속 : 
+	conn system/비밀번호
+	grant create view to scott
+
+16.
+SELECT name FROM customer WHERE name LIKE '박세리';
+
+SQL Developer : SQL 문 위에 오른쪽 마우스 => 설명 => 계획설명
+
+customer 테이블에 name으로 인덱스를 생성하시오
+CREATE INDEX cust_idx ON customer(name);
+
+같은 질의에 대한 두 가지 실행 계획을 비교해보시오
+-> 인덱스 생성 후 인덱스를 먼저 검색하여 name LIKE '박세리' 조건 수행
+
+생성한 인덱스 삭제
+-> DROP INDEX cust_idx;
+
+
+
+
+>>>>>>> 83e8911d5b03848792ccdce73dfc4923585cf180
