@@ -1,0 +1,20 @@
+
+create table r2 ( b number, c number, d number);
+
+create table r1 ( a number, b number, c number);
+
+insert into r1 (a, b, c) values (1, 2, 3);
+insert into r1 (a, b, c) values (4, 2, 3);
+insert into r1 (a, b, c) values (7, 8, 9);
+
+select * from r1;
+
+insert into r2 (b, c, d) values (2, 3, 10);
+insert into r2 (b, c, d) values (2, 3, 11);
+insert into r2 (b, c, d) values (6,7,12);
+
+select * from r2;
+
+
+select r1.a, r1.b, r1.c, r2.b, r2.c, r2.d
+from r1 right outer join r2 on r1.b = r2.b;
